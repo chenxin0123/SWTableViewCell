@@ -1,4 +1,4 @@
-//
+//!
 //  NSMutableArray+SWUtilityButtons.m
 //  SWTableViewCell
 //
@@ -10,6 +10,9 @@
 
 @implementation NSMutableArray (SWUtilityButtons)
 
+/// 提供背景色 文本
+/// 文本颜色默认白色
+/// 文本字体适应宽度
 - (void)sw_addUtilityButtonWithColor:(UIColor *)color title:(NSString *)title
 {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -20,6 +23,7 @@
     [self addObject:button];
 }
 
+/// 提供背景色 属性文本
 - (void)sw_addUtilityButtonWithColor:(UIColor *)color attributedTitle:(NSAttributedString *)title
 {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -29,6 +33,7 @@
     [self addObject:button];
 }
 
+/// 提供背景色 图片
 - (void)sw_addUtilityButtonWithColor:(UIColor *)color icon:(UIImage *)icon
 {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -37,6 +42,7 @@
     [self addObject:button];
 }
 
+/// 提供背景色 图片 selectedIcon被用于高亮以及选中状态
 - (void)sw_addUtilityButtonWithColor:(UIColor *)color normalIcon:(UIImage *)normalIcon selectedIcon:(UIImage *)selectedIcon {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
     button.backgroundColor = color;
@@ -51,6 +57,7 @@
 
 @implementation NSArray (SWUtilityButtons)
 
+/// 先对比数量 再逐个每个按钮
 - (BOOL)sw_isEqualToButtons:(NSArray *)buttons
 {
     buttons = [buttons copy];
@@ -66,6 +73,8 @@
     return YES;
 }
 
+/// 对比两个按钮。。
+/// 对比 背景色 文本 图片 选中图片
 + (BOOL)sw_button:(UIButton *)buttonA isEqualToButton:(UIButton *)buttonB
 {
     if (!buttonA || !buttonB) return NO;

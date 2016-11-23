@@ -1,4 +1,4 @@
-//
+//!
 //  SWCellScrollView.m
 //  SWTableViewCell
 //
@@ -10,6 +10,7 @@
 
 @implementation SWCellScrollView
 
+/// 横向滑动才返回YES
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
     if (gestureRecognizer == self.panGestureRecognizer) {

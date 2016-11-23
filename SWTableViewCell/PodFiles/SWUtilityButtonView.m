@@ -1,4 +1,4 @@
-//
+//!
 //  SWUtilityButtonView.m
 //  SWTableViewCell
 //
@@ -60,8 +60,10 @@
     [self setUtilityButtons:utilityButtons WithButtonWidth:kUtilityButtonWidthDefault];
 }
 
+/// width是单个按钮的宽度
 - (void)setUtilityButtons:(NSArray *)utilityButtons WithButtonWidth:(CGFloat)width
 {
+    /// 先移除已有的按钮
     for (UIButton *button in _utilityButtons)
     {
         [button removeFromSuperview];
@@ -126,6 +128,7 @@
 
 #pragma mark -
 
+/// Work around stupid background-destroying override magic that UITableView seems to perform on contained buttons.
 - (void)pushBackgroundColors
 {
     self.buttonBackgroundColors = [[NSMutableArray alloc] init];

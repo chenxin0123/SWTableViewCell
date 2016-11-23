@@ -17,7 +17,7 @@ static NSString * const kTableViewCellContentView = @"UITableViewCellContentView
 
 @interface SWTableViewCell () <UIScrollViewDelegate,  UIGestureRecognizerDelegate>
 
-@property (nonatomic, weak) UITableView *containingTableView;
+@property (nonatomic, weak) UITableView *containingTableView;///< cell所在的tableview
 
 @property (nonatomic, strong) UIPanGestureRecognizer *tableViewPanGestureRecognizer;
 
@@ -90,6 +90,10 @@ static NSString * const kTableViewCellContentView = @"UITableViewCellContentView
     
     // Add the cell scroll view to the cell
     UIView *contentViewParent = self;
+    // self->cellScrollView->clipView(UIView)->SWUtilityButtonView->Buttons放按钮
+    // self->cellScrollView->_contentCellView->contentView
+    // self->cellScrollView->_contentCellView->seperatorView
+    
     UIView *clipViewParent = self.cellScrollView;
     if (![NSStringFromClass([[self.subviews objectAtIndex:0] class]) isEqualToString:kTableViewCellContentView])
     {
@@ -97,6 +101,9 @@ static NSString * const kTableViewCellContentView = @"UITableViewCellContentView
         contentViewParent = [self.subviews objectAtIndex:0];
         clipViewParent = self;
     }
+    
+    /// 将cellScrollView放到最底下
+    /// 将原先contentView放到_contentCellView中
     NSArray *cellSubviews = [contentViewParent subviews];
     [self insertSubview:self.cellScrollView atIndex:0];
     for (UIView *subview in cellSubviews)
@@ -137,7 +144,6 @@ static NSString * const kTableViewCellContentView = @"UITableViewCellContentView
     self.rightUtilityButtonsView = [[SWUtilityButtonView alloc] initWithUtilityButtons:nil
                                                                             parentCell:self
                                                                  utilityButtonSelector:@selector(rightUtilityButtonHandler:)];
-
     
     UIView *clipViews[] = { self.rightUtilityClipView, self.leftUtilityClipView };
     NSLayoutConstraint *clipConstraints[] = { self.rightUtilityClipConstraint, self.leftUtilityClipConstraint };
@@ -191,6 +197,7 @@ static NSString * const kTableViewPanState = @"state";
     [self removeOldTableViewPanObserver];
 }
 
+/// 处理tableview右边标题以及监听tableview的panGestureRecognizer的状态
 - (void)setContainingTableView:(UITableView *)containingTableView
 {
     [self removeOldTableViewPanObserver];
@@ -202,12 +209,17 @@ static NSString * const kTableViewPanState = @"state";
     if (containingTableView)
     {
         // Check if the UITableView will display Indices on the right. If that's the case, add a padding
+        // 如果右边有标题 偏移15个点
         if ([_containingTableView.dataSource respondsToSelector:@selector(sectionIndexTitlesForTableView:)])
         {
             NSArray *indices = [_containingTableView.dataSource sectionIndexTitlesForTableView:_containingTableView];
             self.additionalRightPadding = indices == nil ? 0 : kSectionIndexWidth;
         }
         
+        // 用来让用户每次只在一个方向上滚动，竖直或者水平 不过如果是45度的时候两个方向都会滚动
+        // 下面是解决方案
+        // http://stackoverflow.com/questions/728014/uiscrollview-paging-horizontally-scrolling-vertically
+        // http://blog.csdn.net/liu_da/article/details/18016893
         _containingTableView.directionalLockEnabled = YES;
         
         [self.tapGestureRecognizer requireGestureRecognizerToFail:_containingTableView.panGestureRecognizer];
@@ -216,6 +228,8 @@ static NSString * const kTableViewPanState = @"state";
     }
 }
 
+/// 处理tableview的手势panGestureRecognizer的state监听
+/// 如果手势的起点不在本cell内 那么询问代理是否需要隐藏本cell的按钮
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
     if([keyPath isEqualToString:kTableViewPanState] && object == _tableViewPanGestureRecognizer)
@@ -285,6 +299,7 @@ static NSString * const kTableViewPanState = @"state";
 
 #pragma mark - UITableViewCell overrides
 
+/// 设置containingTableView
 - (void)didMoveToSuperview
 {
     self.containingTableView = nil;
@@ -308,8 +323,8 @@ static NSString * const kTableViewPanState = @"state";
     frame.origin.x = [self leftUtilityButtonsWidth];
     _contentCellView.frame = frame;
     
+    // 设置contentSize这样可以左右滑动
     self.cellScrollView.contentSize = CGSizeMake(CGRectGetWidth(self.frame) + [self utilityButtonsPadding], CGRectGetHeight(self.frame));
-    
     if (!self.cellScrollView.isTracking && !self.cellScrollView.isDecelerating)
     {
         self.cellScrollView.contentOffset = [self contentOffsetForCellState:_cellState];
@@ -318,6 +333,7 @@ static NSString * const kTableViewPanState = @"state";
     [self updateCellState];
 }
 
+/// 重新布局
 - (void)setFrame:(CGRect)frame
 {
     layoutUpdating = YES;
@@ -335,6 +351,7 @@ static NSString * const kTableViewPanState = @"state";
     layoutUpdating = NO;
 }
 
+/// 隐藏按钮
 - (void)prepareForReuse
 {
     [super prepareForReuse];
@@ -342,6 +359,7 @@ static NSString * const kTableViewPanState = @"state";
     [self hideUtilityButtonsAnimated:NO];
 }
 
+/// 处理tableview情况按钮背景色的问题
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
     // Work around stupid background-destroying override magic that UITableView seems to perform on contained buttons.
@@ -355,16 +373,20 @@ static NSString * const kTableViewPanState = @"state";
     [self.rightUtilityButtonsView popBackgroundColors];
 }
 
+/// 这里还是没有处理好 编辑的时候有可能clipView会被移除掉
 - (void)didTransitionToState:(UITableViewCellStateMask)state {
     [super didTransitionToState:state];
     
     if (state == UITableViewCellStateDefaultMask) {
+        // You should not call this method directly
+        // layoutIfNeeded
         [self layoutSubviews];
     }
 }
 
 #pragma mark - Selection handling
 
+/// 是否允许高亮 询问containingTableView的delegate 默认YES
 - (BOOL)shouldHighlight
 {
     BOOL shouldHighlight = YES;
@@ -379,6 +401,7 @@ static NSString * const kTableViewPanState = @"state";
     return shouldHighlight;
 }
 
+/// 长按
 - (void)scrollViewPressed:(UIGestureRecognizer *)gestureRecognizer
 {
     if (gestureRecognizer.state == UIGestureRecognizerStateBegan && !self.isHighlighted && self.shouldHighlight)
@@ -399,6 +422,7 @@ static NSString * const kTableViewPanState = @"state";
     }
 }
 
+/// 单击
 - (void)scrollViewTapped:(UIGestureRecognizer *)gestureRecognizer
 {
     if (_cellState == kCellStateCenter)
@@ -419,6 +443,7 @@ static NSString * const kTableViewPanState = @"state";
     }
 }
 
+/// 选中cell 以及delegate方法处理
 - (void)selectCell
 {
     if (_cellState == kCellStateCenter)
@@ -442,6 +467,7 @@ static NSString * const kTableViewPanState = @"state";
     }
 }
 
+/// 取消选中
 - (void)deselectCell
 {
     if (_cellState == kCellStateCenter)
@@ -487,6 +513,7 @@ static NSString * const kTableViewPanState = @"state";
     }
 }
 
+/// 隐藏按钮 并调用delegate方法
 - (void)hideUtilityButtonsAnimated:(BOOL)animated
 {
     if (_cellState != kCellStateCenter)
@@ -530,7 +557,7 @@ static NSString * const kTableViewPanState = @"state";
 
 
 #pragma mark - Geometry helpers
-
+/// 返回对应的SWUtilityButtonView的宽度
 - (CGFloat)leftUtilityButtonsWidth
 {
 #if CGFLOAT_IS_DOUBLE
@@ -549,6 +576,7 @@ static NSString * const kTableViewPanState = @"state";
 #endif
 }
 
+/// 返回左右两边SWUtilityButtonView的宽度和
 - (CGFloat)utilityButtonsPadding
 {
 #if CGFLOAT_IS_DOUBLE
@@ -558,6 +586,7 @@ static NSString * const kTableViewPanState = @"state";
 #endif
 }
 
+/// 返回不同状态cellScrollView的contentOffset
 - (CGPoint)contentOffsetForCellState:(SWCellState)state
 {
     CGPoint scrollPt = CGPointZero;
@@ -607,6 +636,7 @@ static NSString * const kTableViewPanState = @"state";
         self.leftUtilityClipConstraint.constant = MAX(0, CGRectGetMinX(frame) - CGRectGetMinX(self.frame));
         self.rightUtilityClipConstraint.constant = MIN(0, CGRectGetMaxX(frame) - CGRectGetMaxX(self.frame));
         
+        /// 编辑中 隐藏左边按钮
         if (self.isEditing) {
             self.leftUtilityClipConstraint.constant = 0;
             self.cellScrollView.contentOffset = CGPointMake([self leftUtilityButtonsWidth], 0);
@@ -616,6 +646,7 @@ static NSString * const kTableViewPanState = @"state";
         self.leftUtilityClipView.hidden = (self.leftUtilityClipConstraint.constant == 0);
         self.rightUtilityClipView.hidden = (self.rightUtilityClipConstraint.constant == 0);
         
+        /// accessoryView处理
         if (self.accessoryType != UITableViewCellAccessoryNone && !self.editing) {
             UIView *accessory = [self.cellScrollView.superview.subviews lastObject];
             

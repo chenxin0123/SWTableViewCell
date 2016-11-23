@@ -22,15 +22,29 @@ typedef NS_ENUM(NSInteger, SWCellState)
     kCellStateRight,
 };
 
+
 @protocol SWTableViewCellDelegate <NSObject>
 
 @optional
+/// 点击了左边的某个按钮
 - (void)swipeableTableViewCell:(SWTableViewCell *)cell didTriggerLeftUtilityButtonWithIndex:(NSInteger)index;
+
+/// 点击了右边的某个按钮
 - (void)swipeableTableViewCell:(SWTableViewCell *)cell didTriggerRightUtilityButtonWithIndex:(NSInteger)index;
+
+/// 状态切换
 - (void)swipeableTableViewCell:(SWTableViewCell *)cell scrollingToState:(SWCellState)state;
+
+/// 当其他cell显示按钮的时候 是否需要隐藏
 - (BOOL)swipeableTableViewCellShouldHideUtilityButtonsOnSwipe:(SWTableViewCell *)cell;
+
+/// 是否允许显示按钮
 - (BOOL)swipeableTableViewCell:(SWTableViewCell *)cell canSwipeToState:(SWCellState)state;
+
+///
 - (void)swipeableTableViewCellDidEndScrolling:(SWTableViewCell *)cell;
+
+///
 - (void)swipeableTableViewCell:(SWTableViewCell *)cell didScroll:(UIScrollView *)scrollView;
 
 @end

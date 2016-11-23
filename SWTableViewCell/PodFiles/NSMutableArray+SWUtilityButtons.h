@@ -1,4 +1,4 @@
-//
+//!
 //  NSMutableArray+SWUtilityButtons.h
 //  SWTableViewCell
 //
@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
+/// 提供一些快速添加按钮到数组的方法
 @interface NSMutableArray (SWUtilityButtons)
 
 - (void)sw_addUtilityButtonWithColor:(UIColor *)color title:(NSString *)title;
